@@ -28,7 +28,6 @@ def parse_timestamp(ts):
 	ts=extract_digits(ts)
 	for digit in ts:
 			frequency[digit] += 1
-	print(frequency) #debug
 	if 6 in frequency:
 		return 3
 	if 5 in frequency:
@@ -52,7 +51,7 @@ def parse_timestamp(ts):
 	return 13
 
 def adjust_timezone(ts, tz):
-	return str(int(ts[:2]) + tz).zfill(2) + ts[2:]
+	return str((int(ts[:2]) + tz) % 24).zfill(2) + ts[2:]
 
 def is_second_better(ts1, ts2):
 	ts1 = extract_digits(ts1)
@@ -69,10 +68,11 @@ def is_second_better(ts1, ts2):
 
 def find_timezone(user):
 	for tz_line in open("timezones", "r"):
-		if tz_line[3:].strip() == user.strip():
-			return int(tz_line[:3])
+		tz_line = tz_line.split()
+		if tz_line[1].strip() == user.strip():
+			return int(tz_line[0])
 	tz = int(raw_input("Timezone? \n"))
-	open("timezones", "a").write("{0:3d} {1}\n".format(tz, user))
+	open("timezones", "a").write("{0} {1}\n".format(tz, user))
 	return tz
 
 def adjust_pot(curr, f):
@@ -85,9 +85,9 @@ def adjust_pot(curr, f):
 def collect_winnings(rank, pot, curr, user):
 	if rank == 13:
 		return pot
-	won = math.floor(pot/rank)
+	won = int(pot/rank)
 	if won > 0:
-		open(curr + ".rep", "a").write("{0} won {1} (1/{2} of {3})", user, won, rank, pot)
+		open(curr + ".rep", "a").write("{0} won {1} (1/{2} of {3}) \n".format(user, won, rank, pot))
 	return pot - won
 
 try:
@@ -103,16 +103,18 @@ try:
 		adjust_pot(curr, lambda x: x + amnt)
 
 		run = open("run", "r").readlines()
-		if len(run) == 0 or not is_second_better(run[-1][:9], ts):
+		if len(run) == 0 or is_second_better(run[-1].split()[0], ts):
 			open("run", "a").write("{0} {1} \n".format(ts, name))
 		else: 
 			for line in reversed(run):
-				run_ts = line[9:]
-				run_name = line[:9]
+				line = line.split()
+				run_ts = line[0]
+				run_name = line[1]
+				print("Paying out? run_ts = {0}, run_name = {1}".format(run_ts, run_name)) #debug
 				for curr in glob.glob("*.pot"):
 					curr = curr[:-4]
 					adjust_pot(curr, lambda pot: collect_winnings(parse_timestamp(run_ts), pot, curr, run_name))
-			open("run", "w").write("{0} {1}".format(ts, name))
+			open("run", "w").write("{0} {1} \n".format(ts, name))
 
 		if raw_input("Continue? (y/n) ") == "n":
 			break
