@@ -8,10 +8,25 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 if len(sys.argv) >= 2 and (sys.argv[1] == "-rep" or sys.argv[1] == "-reprm"):
 	curr = sys.argv[2]
+	overall = {}
 	for line in open(curr + ".rep", "r"):
-		print line
+		print(line.strip())
+		line = line.split()
+		if line[1] == "paid":
+			overall[line[0]] = overall.get(line[0], 0) - int(line[2])
+		else:
+			overall[line[0]] = overall.get(line[0], 0) + int(line[2])
+
 	if sys.argv[1] == "-reprm":
 		os.remove(curr + ".rep")
+
+	print("Overall:")
+	print("- The pot has " + open(curr + ".pot", "r").read())
+	for key in overall.keys():
+		if overall[key] < 0:
+			print("- {0} is down {1}".format(key, -overall[key]))
+		else:
+			print("- {0} is up by {1}".format(key, overall[key]))
 
 	os.chdir(old_dir)
 	sys.exit(0)
